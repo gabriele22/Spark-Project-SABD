@@ -35,17 +35,17 @@ public class Query1 {
         String[] cityNames;
         cityNames= Arrays.copyOfRange(firstLine, 1, firstLine.length);
         String[] finalCityNames = cityNames;
-        GetterTimeZone getterTimeZone = new GetterTimeZone();
-        String[] timeZones = getterTimeZone.getTimeZoneFromCityName(finalCityNames);
+        GetterInfo getterInfo = new GetterInfo();
+        String[] timeZones = getterInfo.getTimeZoneFromCityName(finalCityNames);
 
         //get ther other lines of csv file
        JavaRDD<String> otherLines = file.filter(row -> !row.equals(header));
         JavaRDD<ArrayList<City>>  listOflistOfcities = otherLines
                 .map(line -> CityParser.parseCSV(line, finalCityNames,timeZones));
 
-        //convert to tuple5
+        //convert to tuple5 City-Year-Month-Day-Weather_description
         JavaRDD<Tuple5<String, Integer,Integer,Integer, String>> citiesParsed = listOflistOfcities
-                .flatMap(new ParseRDD())
+                .flatMap(new ParseRDDofLists())
                 .filter(x-> desideredMonths.contains(x._3())); //take only desidered month
 
         //check  number of hour in a day with sky is clear
@@ -91,12 +91,13 @@ public class Query1 {
     }
 
 
-    private static class ParseRDD implements FlatMapFunction<ArrayList<City>, Tuple5<String, Integer,Integer,Integer, String> > {
+    private static class ParseRDDofLists implements FlatMapFunction<ArrayList<City>, Tuple5<String, Integer,Integer,Integer, String> > {
         @Override
         public Iterator<Tuple5<String, Integer, Integer, Integer, String>> call(ArrayList<City> cities) throws Exception {
             List<Tuple5<String, Integer, Integer, Integer, String>> results= new ArrayList<>();
             for (City city : cities) {
-                Tuple5<String, Integer, Integer, Integer, String> result = new Tuple5<>(city.getCity(), city.getYear(), city.getMonth(), city.getDay(), city.getWeather_condition());
+                Tuple5<String, Integer, Integer, Integer, String> result = new Tuple5<>(city.getCity(), city.getYear(),
+                        city.getMonth(), city.getDay(), city.getValue());
                 results.add(result);
             }
             return results.iterator();
