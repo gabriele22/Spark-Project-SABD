@@ -77,11 +77,21 @@ public class Query3 {
                 .take(firstDesiredPosition);
 */
 
-        List<Tuple2<Double,Tuple3<String, String, Integer>>> topOfDesiredYear =
+        List<Tuple4<Double, String, String, Integer>> topOfDesiredYear =
                 getTopOfYear(citiesParsed, desiredSummerMonths,desiredWinterMonths,desiredYear,firstDesiredPosition);
 
-        List<Tuple2<Double,Tuple3<String, String, Integer>>> topOfPreviusYear =
+        List<Tuple4<Double, String, String, Integer>> topOfPreviusYear =
                 getTopOfYear(citiesParsed,desiredSummerMonths,desiredWinterMonths,desiredYear-1,firstDesiredPosition);
+
+        ArrayList<Integer> position = new ArrayList<>();
+
+        for(int i=0; i<topOfDesiredYear.size(); i++){
+            for(int j=0; j<topOfPreviusYear.size(); i++)
+            if(topOfDesiredYear.get(i)._2().equalsIgnoreCase(topOfPreviusYear.get(j)._2()) &&
+                    topOfDesiredYear.get(i)._3().equalsIgnoreCase(topOfPreviusYear.get(j)._3()))
+                    position.add(j);
+
+        }
 
 
 
@@ -90,10 +100,13 @@ public class Query3 {
        // List<Tuple4<String, String, Integer, Double>> print = averageOfSummerMonths .collect();
         //List<Tuple2<Tuple3<String, String, Integer>, Double>> print = averageOfWinterMonths .collect();
         //List<Tuple7<String,String, Integer,Integer,Integer,Integer, Double>> print = citiesParsed .collect();
-        List<Tuple2<Double,Tuple3<String, String, Integer>>> print = topOfDesiredYear;
+        List<Tuple4<Double, String, String, Integer>> print1 = topOfDesiredYear;
 
-        for(int i=0; i< print.size(); i++){
-            System.out.println(print.get(i));
+        List<Tuple4<Double, String, String, Integer>> print2 = topOfPreviusYear;
+
+        for(int i=0; i< print1.size(); i++){
+            System.out.println("anno"+ print1.get(i));
+            System.out.println("anno precedente"+ print2.get(i));
         }
 
 
@@ -121,29 +134,33 @@ public class Query3 {
              List<Integer> months, int year){
 
         return cities
-                .filter(x->(x._3().equals(year)) && months.contains(x._4()))
+                .filter(x->( months.contains(x._4())))
                 .mapToPair(x-> new Tuple2<>(new Tuple3<>(x._1(),x._2(),x._3()),new Tuple2<>(x._7() ,1)))
                 .mapValues(x-> new Tuple2<>(x._1(),x._2()))
                 .reduceByKey((x,y)-> (new Tuple2<>(x._1()+y._1(), x._2()+y._2())))
                 .map(x-> new Tuple4<>(x._1._1(),x._1._2(),x._1._3(), (x._2._1/(x._2._2.doubleValue()))));
     }
 
-    private static List<Tuple2<Double, Tuple3<String, String, Integer>>> getTopOfYear(
+    private static  List<Tuple4<Double, String, String, Integer>>getTopOfYear(
             JavaRDD<Tuple7<String,String, Integer,Integer,Integer,Integer, Double>> cities,
             List<Integer> summerMonths, List<Integer> winterMonths, int year, int numberOfposition
     ){
+        JavaRDD<Tuple7<String,String, Integer,Integer,Integer,Integer, Double>> citiesOfYear = cities
+                .filter(x->x._3().equals(year));
+
         JavaPairRDD<Tuple3<String, String,Integer>,Double>averageOfSummerMonths =
-                getAverageOfDesiredMonthAndDesiredYear(cities,summerMonths,year)
+                getAverageOfDesiredMonthAndDesiredYear(citiesOfYear,summerMonths,year)
                         .mapToPair(x-> new Tuple2<>(new Tuple3<>(x._1(),x._2(),x._3()),x._4()));
 
         JavaPairRDD<Tuple3<String, String,Integer>,Double> averageOfWinterMonths =
-                getAverageOfDesiredMonthAndDesiredYear(cities,winterMonths,year)
+                getAverageOfDesiredMonthAndDesiredYear(citiesOfYear,winterMonths,year)
                         .mapToPair(x-> new Tuple2<>(new Tuple3<>(x._1(),x._2(),x._3()),x._4()));
 
-        List<Tuple2<Double, Tuple3<String, String, Integer>>> topDiff = averageOfSummerMonths
+        List<Tuple4<Double, String, String, Integer>> topDiff = averageOfSummerMonths
                 .join(averageOfWinterMonths)
                 .mapToPair(x-> new Tuple2<>(x._2._1() - x._2._2(), new Tuple3<>(x._1._1(),x._1._2(),x._1._3()) ))
                 .sortByKey(false)
+                .map(x-> new Tuple4<>(x._1,x._2._2(),x._2._1(),x._2._3()))
                 .take(numberOfposition);
 
         return topDiff;
