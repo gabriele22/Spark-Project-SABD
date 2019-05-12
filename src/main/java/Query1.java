@@ -11,11 +11,11 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class Query1 {
-    private static String pathToFile = "data/prj1_dataset/weather_description.csv";
+    private static final String pathToFile = "data/prj1_dataset/weather_description.csv";
 
     private static int minHoursIsClearForDay = 18;
     private static int minDayIsClearForMonth = 15;
-    private static List<Integer> desideredMonths = new ArrayList<>(Arrays.asList(3,4,5));
+    private static List<Integer> desiredMonths = new ArrayList<>(Arrays.asList(3,4,5));
 
 
     public static void main(String[] args) {
@@ -46,7 +46,7 @@ public class Query1 {
         //convert to tuple5 City-Year-Month-Day-Weather_description
         JavaRDD<Tuple5<String, Integer,Integer,Integer, String>> citiesParsed = listOflistOfcities
                 .flatMap(new ParseRDDofLists())
-                .filter(x-> desideredMonths.contains(x._3())); //take only desidered month
+                .filter(x-> desiredMonths.contains(x._3())); //take only desired month
 
         //check  number of hour in a day with sky is clear
         JavaPairRDD<Tuple4<String, Integer,Integer,Integer>, Integer> daySkyIsClear = citiesParsed
@@ -67,7 +67,7 @@ public class Query1 {
                 .mapToPair(x-> new Tuple2<>(new Tuple2<>(x._1(),x._2()),x._3()))
                 .groupByKey()
                 .filter(x-> StreamSupport.stream(x._2().spliterator(), false)
-                        .collect(Collectors.toList()).containsAll(desideredMonths))
+                        .collect(Collectors.toList()).containsAll(desiredMonths))
                 .mapToPair(x-> new Tuple2<>(x._1._2(), x._1()._1()))
                 .distinct()
                 .groupByKey()

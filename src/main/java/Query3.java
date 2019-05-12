@@ -1,13 +1,14 @@
 import org.apache.spark.SparkConf;
+import org.apache.spark.api.java.JavaPairRDD;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
 import org.apache.spark.api.java.function.FlatMapFunction;
-import scala.Tuple5;
-import scala.Tuple6;
+import scala.*;
 import utils.City;
 import utils.CityParser;
 import utils.GetterInfo;
 
+import java.lang.Double;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
@@ -15,7 +16,14 @@ import java.util.List;
 
 public class Query3 {
 
-    private static String pathToFile = "data/prj1_dataset/temperature.csv";
+    private static final String pathToFile = "data/prj1_dataset/temperature.csv";
+    private static final int desiredYear = 2017;
+    private static final int[] desiredIntervalOfHours = {12,15};
+    private static final int firstDesiredPosition = 3;
+    private static List<Integer> desiredSummerMonths = new ArrayList<>(Arrays.asList(6,7,8,9));
+    private static List<Integer> desiredWinterMonths = new ArrayList<>(Arrays.asList(1,2,3,4));
+
+
 
     public static void main(String[] args) {
 
@@ -44,14 +52,45 @@ public class Query3 {
         JavaRDD<ArrayList<City>>  listOflistOfcities = otherLines
                 .map(line -> CityParser.parseCSV(line, finalCityNames,timeZones, nations));
 
-        //convert to tuple6 City-Nation-Year-Month-Day-Temperature
-        JavaRDD<Tuple6<String,String, Integer,Integer,Integer, Double>> citiesParsed = listOflistOfcities
+        //convert to tuple7 City-Nation-Year-Month-Day-Hour-Temperature
+        JavaRDD<Tuple7<String,String, Integer,Integer,Integer,Integer, Double>> citiesParsed = listOflistOfcities
                 .flatMap(new ParseRDDofLists())
-                //add only city with possible temperature in Kelvin
-                //considering approximately the lowest value and the highest value ever recorded (in celsius -100°C<t<50°C)
-                .filter(x->(x._6()>=173) && (x._6()<=323));
+                //take only possible temperature in Kelvin
+                //and only desired interval of hours
+                .filter(x->(x._7()>=173) && (x._7()<=373) &&
+                        (x._6()>= desiredIntervalOfHours[0]) && (x._6()<= desiredIntervalOfHours[1]));
 
-        List<Tuple6<String, String, Integer, Integer, Integer, Double>> print = citiesParsed.collect();
+
+/*
+        JavaPairRDD<Tuple3<String, String,Integer>,Double>averageOfSummerMonths =
+                getAverageOfDesiredMonthAndDesiredYear(citiesParsed,desiredSummerMonths,desiredYear)
+                        .mapToPair(x-> new Tuple2<>(new Tuple3<>(x._1(),x._2(),x._3()),x._4()));
+
+        JavaPairRDD<Tuple3<String, String,Integer>,Double> averageOfWinterMonths =
+                getAverageOfDesiredMonthAndDesiredYear(citiesParsed,desiredWinterMonths,desiredYear)
+                        .mapToPair(x-> new Tuple2<>(new Tuple3<>(x._1(),x._2(),x._3()),x._4()));
+
+        List<Tuple2<Double, Tuple3<String, String, Integer>>> topDiff = averageOfSummerMonths
+                .join(averageOfWinterMonths)
+                .mapToPair(x-> new Tuple2<>(x._2._1() - x._2._2(), new Tuple3<>(x._1._1(),x._1._2(),x._1._3()) ))
+                .sortByKey(false)
+                .take(firstDesiredPosition);
+*/
+
+        List<Tuple2<Double,Tuple3<String, String, Integer>>> topOfDesiredYear =
+                getTopOfYear(citiesParsed, desiredSummerMonths,desiredWinterMonths,desiredYear,firstDesiredPosition);
+
+        List<Tuple2<Double,Tuple3<String, String, Integer>>> topOfPreviusYear =
+                getTopOfYear(citiesParsed,desiredSummerMonths,desiredWinterMonths,desiredYear-1,firstDesiredPosition);
+
+
+
+
+
+       // List<Tuple4<String, String, Integer, Double>> print = averageOfSummerMonths .collect();
+        //List<Tuple2<Tuple3<String, String, Integer>, Double>> print = averageOfWinterMonths .collect();
+        //List<Tuple7<String,String, Integer,Integer,Integer,Integer, Double>> print = citiesParsed .collect();
+        List<Tuple2<Double,Tuple3<String, String, Integer>>> print = topOfDesiredYear;
 
         for(int i=0; i< print.size(); i++){
             System.out.println(print.get(i));
@@ -60,22 +99,53 @@ public class Query3 {
 
         sc.stop();
     }
-//add only city with possible temperature in Kelvin
-                //considering approximately the lowest value and the highest value ever recorded (in celsius -100°C<t<50°C)
 
 
-    private static class ParseRDDofLists implements FlatMapFunction<ArrayList<City>, Tuple6<String,String, Integer,Integer,Integer, Double> > {
+    private static class ParseRDDofLists implements FlatMapFunction<ArrayList<City>, Tuple7<String,String, Integer,Integer,Integer,Integer, Double> > {
         @Override
-        public Iterator<Tuple6<String,String, Integer, Integer, Integer, Double>> call(ArrayList<City> cities) throws Exception {
-            List<Tuple6<String,String, Integer, Integer, Integer, Double>> results= new ArrayList<>();
+        public Iterator<Tuple7<String,String,Integer, Integer, Integer, Integer, Double>> call(ArrayList<City> cities) throws Exception {
+            List<Tuple7<String,String,Integer, Integer, Integer, Integer, Double>> results= new ArrayList<>();
             for (City city : cities) {
-                double temperature = Double.parseDouble(city.getValue());
-                Tuple6<String, String, Integer, Integer, Integer, Double> result = new Tuple6<>(city.getCity(), city.getNation(),
-                            city.getYear(), city.getMonth(), city.getDay(), temperature);
+                Tuple7<String, String, Integer, Integer, Integer,Integer, Double> result =
+                        new Tuple7<>(city.getCity(), city.getNation(),
+                            city.getYear(), city.getMonth(), city.getDay(),city.getHour(), city.getTemperature());
                 results.add(result);
 
             }
             return results.iterator();
         }
+    }
+
+    private static  JavaRDD<Tuple4<String, String,Integer,Double>> getAverageOfDesiredMonthAndDesiredYear(
+            JavaRDD<Tuple7<String,String, Integer,Integer,Integer,Integer, Double>> cities,
+             List<Integer> months, int year){
+
+        return cities
+                .filter(x->(x._3().equals(year)) && months.contains(x._4()))
+                .mapToPair(x-> new Tuple2<>(new Tuple3<>(x._1(),x._2(),x._3()),new Tuple2<>(x._7() ,1)))
+                .mapValues(x-> new Tuple2<>(x._1(),x._2()))
+                .reduceByKey((x,y)-> (new Tuple2<>(x._1()+y._1(), x._2()+y._2())))
+                .map(x-> new Tuple4<>(x._1._1(),x._1._2(),x._1._3(), (x._2._1/(x._2._2.doubleValue()))));
+    }
+
+    private static List<Tuple2<Double, Tuple3<String, String, Integer>>> getTopOfYear(
+            JavaRDD<Tuple7<String,String, Integer,Integer,Integer,Integer, Double>> cities,
+            List<Integer> summerMonths, List<Integer> winterMonths, int year, int numberOfposition
+    ){
+        JavaPairRDD<Tuple3<String, String,Integer>,Double>averageOfSummerMonths =
+                getAverageOfDesiredMonthAndDesiredYear(cities,summerMonths,year)
+                        .mapToPair(x-> new Tuple2<>(new Tuple3<>(x._1(),x._2(),x._3()),x._4()));
+
+        JavaPairRDD<Tuple3<String, String,Integer>,Double> averageOfWinterMonths =
+                getAverageOfDesiredMonthAndDesiredYear(cities,winterMonths,year)
+                        .mapToPair(x-> new Tuple2<>(new Tuple3<>(x._1(),x._2(),x._3()),x._4()));
+
+        List<Tuple2<Double, Tuple3<String, String, Integer>>> topDiff = averageOfSummerMonths
+                .join(averageOfWinterMonths)
+                .mapToPair(x-> new Tuple2<>(x._2._1() - x._2._2(), new Tuple3<>(x._1._1(),x._1._2(),x._1._3()) ))
+                .sortByKey(false)
+                .take(numberOfposition);
+
+        return topDiff;
     }
 }
