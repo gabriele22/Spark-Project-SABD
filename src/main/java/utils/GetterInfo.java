@@ -1,10 +1,15 @@
 package utils;
 
+import org.apache.spark.api.java.JavaRDD;
+import org.apache.spark.api.java.JavaSparkContext;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
 import java.rmi.UnknownHostException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 import static io.restassured.RestAssured.get;
 
@@ -179,6 +184,48 @@ public class GetterInfo {
     }
 
 
+
+    private String getNation(String cityName, JavaSparkContext sc) {
+        String nation = "";
+
+        JavaRDD<String> file = sc.textFile(fileNationCities);
+        String header = file.first();
+        //get ther other lines of csv file
+        List<String> otherLines = file
+                .filter(row -> !row.equals(header))
+                .collect();
+        for(String line: otherLines) {
+            String[] values = line.split(",", -1);
+            if(values[0].contains(cityName)){
+                nation= nation + values[1];
+                return nation;
+            }
+        }
+
+        if(nation.length()==0){
+            CityCoordinate cityCoordinate = new CityCoordinate();
+
+            for (CityCoordinate coordinate : cityCoordinatesArrayList) {
+                if (coordinate.getCity().equals(cityName)) {
+                    cityCoordinate.setCity(cityName);
+                    cityCoordinate.setLat(coordinate.getLat());
+                    cityCoordinate.setLong(coordinate.getLong());
+                }
+            }
+            try {
+                nation = get("http://www.geonames.org/findNearbyPlaceName?lat={lat}&lng={long}",
+                        cityCoordinate.getLat(), cityCoordinate.getLong())
+                        .xmlPath().getString("geonames.geoname.countryName");
+            }catch ( Exception ue){
+                System.err.println("\nControl your Internet Connection");
+                System.exit(1);
+            }
+        }
+        return nation;
+    }
+
+
+
     public String[] getTimeZoneFromCityName(String[] cityNames) {
         String[] timeZones = new String[cityNames.length];
         for (int i=0; i<cityNames.length; i++){
@@ -188,11 +235,11 @@ public class GetterInfo {
         return timeZones;
     }
 
-    public String[] getNationsFromCityName(String[] cityNames) {
+    public String[] getNationsFromCityName(String[] cityNames, JavaSparkContext sc) {
         String[] nations = new String[cityNames.length];
         for (int i=0; i<cityNames.length; i++){
             GetterInfo getterInfo = new GetterInfo();
-            nations[i] = getterInfo.getNation(cityNames[i]);
+            nations[i] = getterInfo.getNation(cityNames[i], sc);
         }
         return nations;
     }

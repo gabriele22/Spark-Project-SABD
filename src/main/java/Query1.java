@@ -39,7 +39,7 @@ public class Query1 {
         String[] timeZones = getterInfo.getTimeZoneFromCityName(finalCityNames);
 
         //get ther other lines of csv file
-       JavaRDD<String> otherLines = file.filter(row -> !row.equals(header));
+        JavaRDD<String> otherLines = file.filter(row -> !row.equals(header));
         JavaRDD<ArrayList<City>>  listOflistOfcities = otherLines
                 .map(line -> CityParser.parseCSV(line, finalCityNames,timeZones));
 

@@ -9,15 +9,15 @@ import utils.CityParser;
 import utils.GetterInfo;
 
 import java.lang.Double;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Iterator;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class Query3 {
 
     private static final String pathToFile = "data/prj1_dataset/temperature.csv";
-    private static final int desiredYear = 2017;
+    private static final int[] desiredYear = {2017,2016};
     private static final int[] desiredIntervalOfHours = {12,15};
     private static final int firstDesiredPosition = 3;
     private static List<Integer> desiredSummerMonths = new ArrayList<>(Arrays.asList(6,7,8,9));
@@ -44,7 +44,12 @@ public class Query3 {
         String[] finalCityNames = cityNames;
         GetterInfo getterInfo = new GetterInfo();
         String[] timeZones = getterInfo.getTimeZoneFromCityName(finalCityNames);
-        String[] nations = getterInfo.getNationsFromCityName(finalCityNames);
+        String[] nations = getterInfo.getNationsFromCityName(finalCityNames, sc);
+        List<String> distinctNations = Arrays.stream(nations).distinct().collect(Collectors.toList());
+
+/*        distinctNations.forEach(x->
+            System.out.println(x));*/
+
 
 
         //get ther other lines of csv file
@@ -61,36 +66,46 @@ public class Query3 {
                         (x._6()>= desiredIntervalOfHours[0]) && (x._6()<= desiredIntervalOfHours[1]));
 
 
-/*
-        JavaPairRDD<Tuple3<String, String,Integer>,Double>averageOfSummerMonths =
-                getAverageOfDesiredMonthAndDesiredYear(citiesParsed,desiredSummerMonths,desiredYear)
-                        .mapToPair(x-> new Tuple2<>(new Tuple3<>(x._1(),x._2(),x._3()),x._4()));
 
-        JavaPairRDD<Tuple3<String, String,Integer>,Double> averageOfWinterMonths =
-                getAverageOfDesiredMonthAndDesiredYear(citiesParsed,desiredWinterMonths,desiredYear)
-                        .mapToPair(x-> new Tuple2<>(new Tuple3<>(x._1(),x._2(),x._3()),x._4()));
 
-        List<Tuple2<Double, Tuple3<String, String, Integer>>> topDiff = averageOfSummerMonths
-                .join(averageOfWinterMonths)
-                .mapToPair(x-> new Tuple2<>(x._2._1() - x._2._2(), new Tuple3<>(x._1._1(),x._1._2(),x._1._3()) ))
-                .sortByKey(false)
-                .take(firstDesiredPosition);
-*/
+        for(String nation: distinctNations) {
+/*            List<Tuple4<Double, String, String, Integer>> topOfDesiredYear =
+                    getTopOfYear(citiesParsed, desiredSummerMonths, desiredWinterMonths,
+                            desiredYear[0], firstDesiredPosition,nation);
 
-        List<Tuple4<Double, String, String, Integer>> topOfDesiredYear =
-                getTopOfYear(citiesParsed, desiredSummerMonths,desiredWinterMonths,desiredYear,firstDesiredPosition);
+            List<Tuple4<Double, String, String, Integer>> topOfPreviusYear =
+                    getTopOfYear(citiesParsed, desiredSummerMonths, desiredWinterMonths,
+                            desiredYear[1], firstDesiredPosition, nation);
 
-        List<Tuple4<Double, String, String, Integer>> topOfPreviusYear =
-                getTopOfYear(citiesParsed,desiredSummerMonths,desiredWinterMonths,desiredYear-1,firstDesiredPosition);
+            List<Tuple4<Double, String, String, Integer>> print1 = topOfDesiredYear;
 
-        ArrayList<Integer> position = new ArrayList<>();
+            List<Tuple4<Double, String, String, Integer>> print2 = topOfPreviusYear;*/
+            List<Tuple2<Double, String>> topOfDesiredYear =
+                    getTopOfYear(citiesParsed, desiredSummerMonths, desiredWinterMonths,
+                            desiredYear[0], firstDesiredPosition,nation);
 
-        for(int i=0; i<topOfDesiredYear.size(); i++){
-            for(int j=0; j<topOfPreviusYear.size(); i++)
-            if(topOfDesiredYear.get(i)._2().equalsIgnoreCase(topOfPreviusYear.get(j)._2()) &&
-                    topOfDesiredYear.get(i)._3().equalsIgnoreCase(topOfPreviusYear.get(j)._3()))
-                    position.add(j);
+            List<Tuple2<Double, String>> topOfPreviusYear =
+                    getTopOfYear(citiesParsed, desiredSummerMonths, desiredWinterMonths,
+                            desiredYear[1], cityNames.length, nation);
 
+            List<Tuple2<Double, String>> print1 = topOfDesiredYear;
+
+            List<Tuple2<Double, String>> print2 = topOfPreviusYear;
+
+
+
+            ArrayList<Integer> positions = new ArrayList<>();
+
+            for (int i = 0; i < topOfDesiredYear.size(); i++) {
+                for (int j = 0; j < topOfPreviusYear.size(); j++)
+                    if(topOfPreviusYear.get(j)._2().equals(topOfDesiredYear.get(i)._2()))
+                        positions.add(j+1);
+
+            }
+            for(int i=0; i< print1.size(); i++){
+                System.out.println(print1.get(i)+ "posizione anno precedente"+ positions.get(i));
+                //System.out.println("anno precedente"+ print2.get(i));
+            }
         }
 
 
@@ -100,14 +115,8 @@ public class Query3 {
        // List<Tuple4<String, String, Integer, Double>> print = averageOfSummerMonths .collect();
         //List<Tuple2<Tuple3<String, String, Integer>, Double>> print = averageOfWinterMonths .collect();
         //List<Tuple7<String,String, Integer,Integer,Integer,Integer, Double>> print = citiesParsed .collect();
-        List<Tuple4<Double, String, String, Integer>> print1 = topOfDesiredYear;
 
-        List<Tuple4<Double, String, String, Integer>> print2 = topOfPreviusYear;
 
-        for(int i=0; i< print1.size(); i++){
-            System.out.println("anno"+ print1.get(i));
-            System.out.println("anno precedente"+ print2.get(i));
-        }
 
 
         sc.stop();
@@ -141,19 +150,22 @@ public class Query3 {
                 .map(x-> new Tuple4<>(x._1._1(),x._1._2(),x._1._3(), (x._2._1/(x._2._2.doubleValue()))));
     }
 
-    private static  List<Tuple4<Double, String, String, Integer>>getTopOfYear(
+    private static  List<Tuple2<Double, String>>getTopOfYear(
             JavaRDD<Tuple7<String,String, Integer,Integer,Integer,Integer, Double>> cities,
-            List<Integer> summerMonths, List<Integer> winterMonths, int year, int numberOfposition
+            List<Integer> summerMonths, List<Integer> winterMonths, int year, int numberOfposition, String nation
     ){
-        JavaRDD<Tuple7<String,String, Integer,Integer,Integer,Integer, Double>> citiesOfYear = cities
-                .filter(x->x._3().equals(year));
+        JavaRDD<Tuple7<String,String, Integer,Integer,Integer,Integer, Double>> citiesOfYearNation = cities
+                .filter(x->x._3().equals(year) && x._2().equals(nation));
 
+        //TODO  come ritorno mesi estivi(e invernali) far ritornare solo String=città e Double = media
+
+/*
         JavaPairRDD<Tuple3<String, String,Integer>,Double>averageOfSummerMonths =
-                getAverageOfDesiredMonthAndDesiredYear(citiesOfYear,summerMonths,year)
+                getAverageOfDesiredMonthAndDesiredYear(citiesOfYearNation,summerMonths,year)
                         .mapToPair(x-> new Tuple2<>(new Tuple3<>(x._1(),x._2(),x._3()),x._4()));
 
         JavaPairRDD<Tuple3<String, String,Integer>,Double> averageOfWinterMonths =
-                getAverageOfDesiredMonthAndDesiredYear(citiesOfYear,winterMonths,year)
+                getAverageOfDesiredMonthAndDesiredYear(citiesOfYearNation,winterMonths,year)
                         .mapToPair(x-> new Tuple2<>(new Tuple3<>(x._1(),x._2(),x._3()),x._4()));
 
         List<Tuple4<Double, String, String, Integer>> topDiff = averageOfSummerMonths
@@ -162,7 +174,27 @@ public class Query3 {
                 .sortByKey(false)
                 .map(x-> new Tuple4<>(x._1,x._2._2(),x._2._1(),x._2._3()))
                 .take(numberOfposition);
+*/
+        JavaPairRDD<String, Double>averageOfSummerMonths =
+                getAverageOfDesiredMonthAndDesiredYear(citiesOfYearNation,summerMonths,year)
+                        .mapToPair(x-> new Tuple2<>(x._1(),x._4()));
+
+        JavaPairRDD<String, Double>averageOfWinterMonths =
+                getAverageOfDesiredMonthAndDesiredYear(citiesOfYearNation,winterMonths,year)
+                        .mapToPair(x-> new Tuple2<>(x._1(),x._4()));
+
+        List<Tuple2<Double, String>> topDiff = averageOfSummerMonths
+                .join(averageOfWinterMonths)
+                .mapToPair(x-> new Tuple2<>(x._2._1() - x._2._2(), x._1()))
+                .sortByKey(false)
+                .map(x-> new Tuple2<>(x._1(),x._2()))
+                .take(numberOfposition);
+
+
 
         return topDiff;
+    }
+
+    private static class mapIterator {
     }
 }
