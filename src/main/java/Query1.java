@@ -94,7 +94,7 @@ public class Query1 {
 
     private static class ParseRDDofLists implements FlatMapFunction<ArrayList<City>, Tuple5<String, Integer,Integer,Integer, String> > {
         @Override
-        public Iterator<Tuple5<String, Integer, Integer, Integer, String>> call(ArrayList<City> cities) throws Exception {
+        public Iterator<Tuple5<String, Integer, Integer, Integer, String>> call(ArrayList<City> cities) {
             List<Tuple5<String, Integer, Integer, Integer, String>> results= new ArrayList<>();
             for (City city : cities) {
                 Tuple5<String, Integer, Integer, Integer, String> result = new Tuple5<>(city.getCity(), city.getYear(),
@@ -109,13 +109,12 @@ public class Query1 {
     private static class ControlHour implements PairFunction<Tuple5<String, Integer, Integer, Integer, String>,
                                                       Tuple4<String, Integer, Integer, Integer>, Integer> {
         @Override
-        public Tuple2<Tuple4<String, Integer,Integer,Integer>, Integer> call(Tuple5<String, Integer, Integer, Integer, String> stringIntegerIntegerIntegerStringTuple5) throws Exception {
+        public Tuple2<Tuple4<String, Integer,Integer,Integer>, Integer> call(Tuple5<String, Integer, Integer, Integer, String> stringIntegerIntegerIntegerStringTuple5) {
             Tuple2<Tuple4<String, Integer,Integer,Integer>, Integer> result = null;
-            Tuple4<String, Integer,Integer,Integer> key = null;
             Tuple5<String, Integer, Integer, Integer, String> x= stringIntegerIntegerIntegerStringTuple5;
 
             if(x._5().equals("sky is clear"))
-                result = new Tuple2<>(key=new Tuple4<>(x._1(),x._2(),x._3(),x._4()), 1);
+                result = new Tuple2<>(new Tuple4<>(x._1(),x._2(),x._3(),x._4()), 1);
 
             return result;
         }

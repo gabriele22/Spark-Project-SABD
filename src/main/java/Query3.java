@@ -114,7 +114,7 @@ public class Query3 {
 
     private static class ParseRDDofLists implements FlatMapFunction<ArrayList<City>, Tuple7<String,String, Integer,Integer,Integer,Integer, Double> > {
         @Override
-        public Iterator<Tuple7<String,String,Integer, Integer, Integer, Integer, Double>> call(ArrayList<City> cities) throws Exception {
+        public Iterator<Tuple7<String,String,Integer, Integer, Integer, Integer, Double>> call(ArrayList<City> cities) {
             List<Tuple7<String,String,Integer, Integer, Integer, Integer, Double>> results= new ArrayList<>();
             for (City city : cities) {
                 Tuple7<String, String, Integer, Integer, Integer,Integer, Double> result =
@@ -131,9 +131,11 @@ public class Query3 {
     private static class mapToAverage implements PairFunction<Tuple7<String, String, Integer, Integer, Integer, Integer, Double>,
             Tuple3<String,String,Integer>, Tuple4<Double,Integer,Double,Integer>> {
         @Override
-        public Tuple2<Tuple3<String, String, Integer>, Tuple4<Double, Integer, Double, Integer>> call(Tuple7<String, String, Integer, Integer, Integer, Integer, Double> stringStringIntegerIntegerIntegerIntegerDoubleTuple7) throws Exception {
+        public Tuple2<Tuple3<String, String, Integer>, Tuple4<Double, Integer, Double, Integer>> call(
+                Tuple7<String, String, Integer, Integer, Integer, Integer, Double> stringStringIntegerIntegerIntegerIntegerDoubleTuple7) {
+
             Tuple7<String,String, Integer, Integer, Integer, Integer, Double> x = stringStringIntegerIntegerIntegerIntegerDoubleTuple7;
-            Tuple2<Tuple3<String, String, Integer>, Tuple4<Double, Integer, Double, Integer>> pair = null;
+            Tuple2<Tuple3<String, String, Integer>, Tuple4<Double, Integer, Double, Integer>> pair;
             Tuple2<Double,Integer> sumCountSummer = null;
             Tuple2<Double,Integer> sumCountWinter = null;
 
