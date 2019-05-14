@@ -75,11 +75,7 @@ public class Query1 {
 
         //print final result
         List<Tuple2<Integer,Iterable<String>>> finalResult = yearIsClear.collect();
-/*        for(Tuple2<Integer,Iterable<String>> r : finalResult){
-            System.out.println(r);
-            System.out.println("-------------------------------");
 
-        }*/
         for (Tuple2<Integer,Iterable<String>> r : finalResult){
             Iterator<String> iterator = r._2().iterator();
             System.out.print("Year: " + r._1()
