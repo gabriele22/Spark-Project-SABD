@@ -11,14 +11,17 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class Query1 {
-    private static final String pathToFile = "data/prj1_dataset/weather_description.csv";
+   // private static final String pathToFile = "data/prj1_dataset/weather_description.csv";
 
     private static int minHoursIsClearForDay = 18;
     private static int minDayIsClearForMonth = 15;
     private static List<Integer> desiredMonths = new ArrayList<>(Arrays.asList(3,4,5));
+    private static final String weatherCondition= "sky is clear";
 
 
     public static void main(String[] args) {
+
+        String pathToFile= args[0];
 
         SparkConf conf = new SparkConf()
                 .setMaster("local")
@@ -68,7 +71,7 @@ public class Query1 {
                 .groupByKey()
                 .filter(x-> StreamSupport.stream(x._2().spliterator(), false)
                         .collect(Collectors.toList()).containsAll(desiredMonths))
-                .mapToPair(x-> new Tuple2<>(x._1._2(), x._1()._1()))
+                .mapToPair(x-> new Tuple2<>(x._1._2(), x._1._1()))
                 .distinct()
                 .groupByKey()
                 .sortByKey();
@@ -113,7 +116,7 @@ public class Query1 {
             Tuple2<Tuple4<String, Integer,Integer,Integer>, Integer> result = null;
             Tuple5<String, Integer, Integer, Integer, String> x= stringIntegerIntegerIntegerStringTuple5;
 
-            if(x._5().equals("sky is clear"))
+            if(x._5().equals(weatherCondition))
                 result = new Tuple2<>(new Tuple4<>(x._1(),x._2(),x._3(),x._4()), 1);
 
             return result;

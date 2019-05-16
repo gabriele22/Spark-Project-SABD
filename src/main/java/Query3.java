@@ -28,6 +28,8 @@ public class Query3 {
 
     public static void main(String[] args) {
 
+        //String pathToFile= args[0];
+
         SparkConf conf = new SparkConf()
                 .setMaster("local")
                 .setAppName("Log Analyzer");
@@ -86,7 +88,7 @@ public class Query3 {
             List<Tuple2<String,Double>> rankingPrev = Lists.newArrayList(topPreviousYear.get(0)._2());
 
             ArrayList<Integer> positions = new ArrayList<>();
-            System.out.println("Nation: "+ nation + "   Ranking Year "+ desiredYearList.get(0));
+            System.out.println("\nNation: "+ nation + "   Ranking Year "+ desiredYearList.get(0));
             //Print in tabular format
             System.out.println("---------------------------------------------------------");
             System.out.printf("%4s %15s %10s %10s %s ", "RANK", "CITY", "VALUE", "YEAR", desiredYearList.get(1));
@@ -106,7 +108,6 @@ public class Query3 {
 
 
         }
-
 
         sc.stop();
     }

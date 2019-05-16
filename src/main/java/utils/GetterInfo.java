@@ -126,65 +126,6 @@ public class GetterInfo {
 
     //first try to find nation in the file word_cities.csv
     //if the city is not present in the file it obtains the nation by making a request to the site www.geonames.org
-    private String getNation(String cityName) {
-        BufferedReader br = null;
-        String line = "";
-        String cvsSplitBy = ",";
-        String nation = "";
-
-        try {
-            br = new BufferedReader(new FileReader(fileNationCities));
-            int index=0;
-
-            while ((line = br.readLine()) != null) {
-
-                String[] values = line.split(cvsSplitBy, -1);
-                if(index>0) {//skip firs line
-                    if(values[0].contains(cityName)){
-                        nation= nation + values[1];
-                        return nation;
-                    }
-                }
-                index++;
-            }
-
-
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            if (br != null) {
-                try {
-                    br.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-
-        if(nation.length()==0){
-            CityCoordinate cityCoordinate = new CityCoordinate();
-
-            for (CityCoordinate coordinate : cityCoordinatesArrayList) {
-                if (coordinate.getCity().equals(cityName)) {
-                    cityCoordinate.setCity(cityName);
-                    cityCoordinate.setLat(coordinate.getLat());
-                    cityCoordinate.setLong(coordinate.getLong());
-                }
-            }
-            try {
-                nation = get("http://www.geonames.org/findNearbyPlaceName?lat={lat}&lng={long}",
-                        cityCoordinate.getLat(), cityCoordinate.getLong())
-                        .xmlPath().getString("geonames.geoname.countryName");
-            }catch ( Exception ue){
-                System.err.println("\nControl your Internet Connection");
-                System.exit(1);
-            }
-        }
-        return nation;
-    }
-
-
-
     private String getNation(String cityName, JavaSparkContext sc) {
         String nation = "";
 
@@ -216,7 +157,7 @@ public class GetterInfo {
                 nation = get("http://www.geonames.org/findNearbyPlaceName?lat={lat}&lng={long}",
                         cityCoordinate.getLat(), cityCoordinate.getLong())
                         .xmlPath().getString("geonames.geoname.countryName");
-            }catch ( Exception ue){
+            }catch ( Exception e){
                 System.err.println("\nControl your Internet Connection");
                 System.exit(1);
             }
