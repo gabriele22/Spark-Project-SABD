@@ -9,14 +9,14 @@ import scala.*;
 import utils.City;
 import utils.CityParser;
 import utils.GetterInfo;
-
 import java.lang.Double;
+import java.lang.Long;
 import java.util.*;
 import java.util.stream.Collectors;
 
 public class Query3 {
 
-    private static final String pathToFile = "data/prj1_dataset/temperature.csv";
+    //private static final String pathToFile = "data/prj1_dataset/temperature.csv";
     private static final int[] desiredIntervalOfHours = {12,15};
     private static List<Integer> desiredMonths = new ArrayList<>(Arrays.asList(1,2,3,4,6,7,8,9));
     private static List<Integer> desiredSummerMonths = new ArrayList<>(Arrays.asList(6,7,8,9));
@@ -28,7 +28,10 @@ public class Query3 {
 
     public static void main(String[] args) {
 
-        //String pathToFile= args[0];
+        long initialTime = System.currentTimeMillis();
+
+        String pathFileCityAttributes = args[1] ;
+        String pathFileTemperature= args[2];
 
         SparkConf conf = new SparkConf()
                 .setMaster("local")
@@ -37,7 +40,7 @@ public class Query3 {
         sc.setLogLevel("ERROR");
 
         //read file
-        JavaRDD<String> file = sc.textFile(pathToFile);
+        JavaRDD<String> file= sc.textFile(pathFileTemperature);
         String header = file.first();
         String[] firstLine = header.split(",",-1);
 
@@ -45,11 +48,10 @@ public class Query3 {
         String[] cityNames;
         cityNames= Arrays.copyOfRange(firstLine, 1, firstLine.length);
         String[] finalCityNames = cityNames;
-        GetterInfo getterInfo = new GetterInfo();
-        String[] timeZones = getterInfo.getTimeZoneFromCityName(finalCityNames);
-        String[] nations = getterInfo.getNationsFromCityName(finalCityNames, sc);
+        GetterInfo getterInfo = new GetterInfo(sc,pathFileCityAttributes);
+        String[] timeZones = getterInfo.getTimeZoneFromCityName( sc,finalCityNames);
+        String[] nations = getterInfo.getNationsFromCityName(sc,finalCityNames);
         List<String> distinctNations = Arrays.stream(nations).distinct().collect(Collectors.toList());
-
 
         //get ther other lines of csv file
         JavaRDD<String> otherLines = file.filter(row -> !row.equals(header));
@@ -110,6 +112,8 @@ public class Query3 {
         }
 
         sc.stop();
+        long finalTime = System.currentTimeMillis();
+        System.out.printf("Total time to complete Query3: %s ms\n", Long.toString(finalTime-initialTime));
     }
 
 

@@ -6,13 +6,13 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import scala.*;
 import utils.*;
+
+import java.lang.Long;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 
 public class Query1 {
-   // private static final String pathToFile = "data/prj1_dataset/weather_description.csv";
-
     private static int minHoursIsClearForDay = 18;
     private static int minDayIsClearForMonth = 15;
     private static List<Integer> desiredMonths = new ArrayList<>(Arrays.asList(3,4,5));
@@ -20,17 +20,19 @@ public class Query1 {
 
 
     public static void main(String[] args) {
+        long initialTime = System.currentTimeMillis();
 
-        String pathToFile= args[0];
+        String pathFileCityAttributes = args[1];
+        String pathFileWeatherDescription= args[2];
 
         SparkConf conf = new SparkConf()
                 .setMaster("local")
                 .setAppName("Log Analyzer");
         JavaSparkContext sc = new JavaSparkContext(conf);
         sc.setLogLevel("ERROR");
-
+//TODO non mettere citynames e timezone in array ma in RDD e NON nella parse ma dopo li unisco con una join
         //read file
-        JavaRDD<String> file = sc.textFile(pathToFile);
+        JavaRDD<String> file = sc.textFile(pathFileWeatherDescription);
         String header = file.first();
         String[] firstLine = header.split(",",-1);
 
@@ -38,8 +40,8 @@ public class Query1 {
         String[] cityNames;
         cityNames= Arrays.copyOfRange(firstLine, 1, firstLine.length);
         String[] finalCityNames = cityNames;
-        GetterInfo getterInfo = new GetterInfo();
-        String[] timeZones = getterInfo.getTimeZoneFromCityName(finalCityNames);
+        GetterInfo getterInfo = new GetterInfo(sc, pathFileCityAttributes);
+        String[] timeZones = getterInfo.getTimeZoneFromCityName(sc, finalCityNames);
 
         //get ther other lines of csv file
         JavaRDD<String> otherLines = file.filter(row -> !row.equals(header));
@@ -92,6 +94,8 @@ public class Query1 {
 
         sc.stop();
 
+        long finalTime = System.currentTimeMillis();
+        System.out.printf("Total time to complete Query1: %s ms\n", Long.toString(finalTime-initialTime));
     }
 
 
