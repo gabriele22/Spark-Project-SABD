@@ -6,7 +6,7 @@
 
     <groupId>it.uniroma2</groupId>
     <artifactId>Spark-Project-SABD</artifactId>
-    <version>1.0</version>
+    <version>1.0-SNAPSHOT</version>
 
     <dependencies>
         <dependency>
@@ -36,11 +36,14 @@
             <version>2.4.5</version>
         </dependency>
 
-<!--        <dependency>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-assembly-plugin</artifactId>
-            <version>2.6</version>
-        </dependency>-->
+
+        <dependency>
+            <groupId>redis.clients</groupId>
+            <artifactId>jedis</artifactId>
+            <version>3.0.1</version>
+        </dependency>
+
+
 
 
     </dependencies>

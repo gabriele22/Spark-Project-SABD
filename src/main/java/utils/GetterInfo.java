@@ -1,12 +1,12 @@
 package utils;
 import org.apache.spark.api.java.JavaRDD;
 import org.apache.spark.api.java.JavaSparkContext;
+import redis.clients.jedis.Jedis;
+
 import java.util.ArrayList;
 import java.util.List;
 
 import static io.restassured.RestAssured.*;
-import static io.restassured.matcher.RestAssuredMatchers.*;
-import org.hamcrest.Matchers.*;
 
 public class GetterInfo {
     private ArrayList<CityCoordinate> cityCoordinatesArrayList;
@@ -85,7 +85,7 @@ public class GetterInfo {
 
     //first try to find nation in the file word_cities.csv
     //if the city is not present in the file it obtains the nation by making a request to the site www.geonames.org
-    private String getNation(String cityName, JavaSparkContext sc) {
+/*    private String getNation(String cityName, JavaSparkContext sc) {
         String nation = "";
         JavaRDD<String> file = sc.textFile(fileNationCities);
         String header = file.first();
@@ -121,7 +121,36 @@ public class GetterInfo {
             }
         }
         return nation;
+    }*/
+
+    private String getNation(String cityName, String redisIP) {
+        //Connecting to Redis server
+        Jedis jedis = new Jedis(redisIP);
+        String nation = jedis.get(cityName);
+
+        if(nation==null){
+            System.out.println(cityName);
+            CityCoordinate cityCoordinate = new CityCoordinate();
+
+            for (CityCoordinate coordinate : cityCoordinatesArrayList) {
+                if (coordinate.getCity().equals(cityName)) {
+                    cityCoordinate.setCity(cityName);
+                    cityCoordinate.setLat(coordinate.getLat());
+                    cityCoordinate.setLong(coordinate.getLong());
+                }
+            }
+            try {
+                nation = get("http://www.geonames.org/findNearbyPlaceName?lat={lat}&lng={long}",
+                        cityCoordinate.getLat(), cityCoordinate.getLong())
+                        .xmlPath().getString("geonames.geoname.countryName");
+            }catch ( Exception e){
+                System.err.println("\nControl your Internet Connection");
+                System.exit(1);
+            }
+        }
+        return nation;
     }
+
 
 
 
@@ -133,10 +162,11 @@ public class GetterInfo {
         return timeZones;
     }
 
-    public String[] getNationsFromCityName(JavaSparkContext sc, String[] cityNames) {
+    public String[] getNationsFromCityName(String redisIp, String[] cityNames) {
         String[] nations = new String[cityNames.length];
         for (int i=0; i<cityNames.length; i++){
-            nations[i] = getNation(cityNames[i], sc);
+            //nations[i] = getNation(cityNames[i], sc);
+            nations[i] = getNation(cityNames[i], redisIp);
         }
         return nations;
     }

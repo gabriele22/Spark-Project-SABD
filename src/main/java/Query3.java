@@ -50,7 +50,7 @@ public class Query3 {
         String[] finalCityNames = cityNames;
         GetterInfo getterInfo = new GetterInfo(sc,pathFileCityAttributes);
         String[] timeZones = getterInfo.getTimeZoneFromCityName( sc,finalCityNames);
-        String[] nations = getterInfo.getNationsFromCityName(sc,finalCityNames);
+        String[] nations = getterInfo.getNationsFromCityName(args[3],finalCityNames);
         List<String> distinctNations = Arrays.stream(nations).distinct().collect(Collectors.toList());
 
         //get ther other lines of csv file
