@@ -20,17 +20,20 @@ public class Query1 {
 
 
     public static void main(String[] args) {
+        if (args.length != 2) {
+            System.out.println("\nERROR: Insert arguments in this order: " +
+                    "1. 'file city-attributes, 2. file weather-description'");
+        }
         long initialTime = System.currentTimeMillis();
 
-        String pathFileCityAttributes = args[1];
-        String pathFileWeatherDescription= args[2];
+        String pathFileCityAttributes = args[0];
+        String pathFileWeatherDescription= args[1];
 
         SparkConf conf = new SparkConf()
                 .setMaster("local")
-                .setAppName("Log Analyzer");
+                .setAppName("Query 1");
         JavaSparkContext sc = new JavaSparkContext(conf);
         sc.setLogLevel("ERROR");
-//TODO non mettere citynames e timezone in array ma in RDD e NON nella parse ma dopo li unisco con una join
         //read file
         JavaRDD<String> file = sc.textFile(pathFileWeatherDescription);
         String header = file.first();
@@ -41,8 +44,9 @@ public class Query1 {
         cityNames= Arrays.copyOfRange(firstLine, 1, firstLine.length);
         String[] finalCityNames = cityNames;
         GetterInfo getterInfo = new GetterInfo(sc, pathFileCityAttributes);
+        long iTimeZone = System.currentTimeMillis();
         String[] timeZones = getterInfo.getTimeZoneFromCityName(sc, finalCityNames);
-
+        long fTimeZone = System.currentTimeMillis()- iTimeZone;
         //get ther other lines of csv file
         JavaRDD<String> otherLines = file.filter(row -> !row.equals(header));
         JavaRDD<ArrayList<City>>  listOflistOfcities = otherLines
@@ -93,7 +97,7 @@ public class Query1 {
         }
 
         sc.stop();
-
+        System.out.printf("Total time to obtain TimeZones Query1: %s ms\n", Long.toString(fTimeZone));
         long finalTime = System.currentTimeMillis();
         System.out.printf("Total time to complete Query1: %s ms\n", Long.toString(finalTime-initialTime));
     }

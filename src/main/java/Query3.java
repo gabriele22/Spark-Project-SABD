@@ -27,15 +27,19 @@ public class Query3 {
 
 
     public static void main(String[] args) {
+        if (args.length != 3) {
+            System.out.println("\nERROR: Insert arguments in this order: " +
+                    "1. 'file city-attributes, 2. file temperatures 3. redis ip'");
+        }
 
         long initialTime = System.currentTimeMillis();
 
-        String pathFileCityAttributes = args[1] ;
-        String pathFileTemperature= args[2];
+        String pathFileCityAttributes = args[0] ;
+        String pathFileTemperature= args[1];
 
         SparkConf conf = new SparkConf()
                 .setMaster("local")
-                .setAppName("Log Analyzer");
+                .setAppName("Query 3");
         JavaSparkContext sc = new JavaSparkContext(conf);
         sc.setLogLevel("ERROR");
 
@@ -49,8 +53,12 @@ public class Query3 {
         cityNames= Arrays.copyOfRange(firstLine, 1, firstLine.length);
         String[] finalCityNames = cityNames;
         GetterInfo getterInfo = new GetterInfo(sc,pathFileCityAttributes);
+        long iTimeZone = System.currentTimeMillis();
         String[] timeZones = getterInfo.getTimeZoneFromCityName( sc,finalCityNames);
+        long fTimeZone = System.currentTimeMillis()- iTimeZone;
+        long iNations = System.currentTimeMillis();
         String[] nations = getterInfo.getNationsFromCityName(args[3],finalCityNames);
+        long fNations = System.currentTimeMillis() - iNations;
         List<String> distinctNations = Arrays.stream(nations).distinct().collect(Collectors.toList());
 
         //get ther other lines of csv file
@@ -112,6 +120,8 @@ public class Query3 {
         }
 
         sc.stop();
+        System.out.printf("Total time to obtain TimeZones Query3: %s ms\n", Long.toString(fTimeZone));
+        System.out.printf("Total time to obtain Nations Query3: %s ms\n", Long.toString(fNations));
         long finalTime = System.currentTimeMillis();
         System.out.printf("Total time to complete Query3: %s ms\n", Long.toString(finalTime-initialTime));
     }
