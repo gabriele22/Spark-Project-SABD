@@ -6,12 +6,15 @@ import org.apache.spark.api.java.function.FlatMapFunction;
 import org.apache.spark.api.java.function.PairFunction;
 import scala.*;
 import utils.*;
-
 import java.lang.Long;
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
-
+/**
+ this class (by default) finds ,for each year,
+ the cities that have at least 15 days of clear weather
+ in the months of March, April and May
+ */
 public class Query1 {
     private static int minHoursIsClearForDay = 18;
     private static int minDayIsClearForMonth = 15;

@@ -123,10 +123,13 @@ public class GetterInfo {
         return nation;
     }*/
 
-    private String getNation(String cityName, String redisIP) {
-        //Connecting to Redis server
-        Jedis jedis = new Jedis(redisIP);
-        String nation = jedis.get(cityName);
+    private String getNation(String cityName, String redisIP, boolean useRedis) {
+        String nation=null;
+        if(useRedis) {
+            //Connecting to Redis server
+            Jedis jedis = new Jedis(redisIP);
+            nation = jedis.get(cityName);
+        }
 
         if(nation==null){
             System.out.println(cityName);
@@ -148,6 +151,7 @@ public class GetterInfo {
                 System.exit(1);
             }
         }
+
         return nation;
     }
 
@@ -162,11 +166,11 @@ public class GetterInfo {
         return timeZones;
     }
 
-    public String[] getNationsFromCityName(String redisIp, String[] cityNames) {
+    public String[] getNationsFromCityName(String redisIp, String[] cityNames, boolean useRedis) {
         String[] nations = new String[cityNames.length];
         for (int i=0; i<cityNames.length; i++){
             //nations[i] = getNation(cityNames[i], sc);
-            nations[i] = getNation(cityNames[i], redisIp);
+            nations[i] = getNation(cityNames[i], redisIp, useRedis);
         }
         return nations;
     }

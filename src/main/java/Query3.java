@@ -14,9 +14,14 @@ import java.lang.Long;
 import java.util.*;
 import java.util.stream.Collectors;
 
+/**
+ this class (by default) finds, for each nation,
+ the three cities that have registered in 2017 the maximum difference in average temperatures
+ in the local time slot 12: 00-15: 00 in June, July, August and September
+ compared to the months of January, February, March and April.
+ It also compares the position of cities in the ranking of the previous year
+ */
 public class Query3 {
-
-    //private static final String pathToFile = "data/prj1_dataset/temperature.csv";
     private static final int[] desiredIntervalOfHours = {12,15};
     private static List<Integer> desiredMonths = new ArrayList<>(Arrays.asList(1,2,3,4,6,7,8,9));
     private static List<Integer> desiredSummerMonths = new ArrayList<>(Arrays.asList(6,7,8,9));
@@ -51,13 +56,16 @@ public class Query3 {
         //get city names and timezones
         String[] cityNames;
         cityNames= Arrays.copyOfRange(firstLine, 1, firstLine.length);
+        boolean useRedis = true;
+        List<String> distinctCities = Arrays.stream(cityNames).distinct().collect(Collectors.toList());
+        if(cityNames.length != distinctCities.size()) {useRedis=false;}
         String[] finalCityNames = cityNames;
         GetterInfo getterInfo = new GetterInfo(sc,pathFileCityAttributes);
         long iTimeZone = System.currentTimeMillis();
         String[] timeZones = getterInfo.getTimeZoneFromCityName( sc,finalCityNames);
         long fTimeZone = System.currentTimeMillis()- iTimeZone;
         long iNations = System.currentTimeMillis();
-        String[] nations = getterInfo.getNationsFromCityName(args[3],finalCityNames);
+        String[] nations = getterInfo.getNationsFromCityName(args[2],finalCityNames, useRedis);
         long fNations = System.currentTimeMillis() - iNations;
         List<String> distinctNations = Arrays.stream(nations).distinct().collect(Collectors.toList());
 
