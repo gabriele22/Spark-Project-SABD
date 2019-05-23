@@ -42,11 +42,19 @@ public class Query3 {
         String pathFileCityAttributes = args[0] ;
         String pathFileTemperature= args[1];
 
+        //local mode
         SparkConf conf = new SparkConf()
                 .setMaster("local")
                 .setAppName("Query 3");
+
+        //cluster mode
+/*        SparkConf conf = new SparkConf()
+                .setAppName("Query 3")
+                .set("spark.submit.deployMode","cluster");*/
         JavaSparkContext sc = new JavaSparkContext(conf);
         sc.setLogLevel("ERROR");
+
+        long iOperations = System.currentTimeMillis();
 
         //read file
         JavaRDD<String> file= sc.textFile(pathFileTemperature);
@@ -63,26 +71,31 @@ public class Query3 {
         GetterInfo getterInfo = new GetterInfo(sc,pathFileCityAttributes);
         long iTimeZone = System.currentTimeMillis();
         String[] timeZones = getterInfo.getTimeZoneFromCityName( sc,finalCityNames);
-        long fTimeZone = System.currentTimeMillis()- iTimeZone;
+        long fTimeZone = System.currentTimeMillis();
+        //get nations
         long iNations = System.currentTimeMillis();
         String[] nations = getterInfo.getNationsFromCityName(args[2],finalCityNames, useRedis);
-        long fNations = System.currentTimeMillis() - iNations;
+        long fNations = System.currentTimeMillis();
         List<String> distinctNations = Arrays.stream(nations).distinct().collect(Collectors.toList());
 
         //get ther other lines of csv file
+        long iParseFile = System.currentTimeMillis();
         JavaRDD<String> otherLines = file.filter(row -> !row.equals(header));
         JavaRDD<ArrayList<City>>  listOflistOfcities = otherLines
                 .map(line -> CityParser.parseCSV(line, finalCityNames,timeZones, nations));
+        long fParseFile = System.currentTimeMillis();
+
 
         //convert to tuple7 City-Nation-Year-Month-Day-Hour-Temperature
+        // and take only useful tuples
         JavaRDD<Tuple7<String,String, Integer,Integer,Integer,Integer, Double>> citiesParsed = listOflistOfcities
                 .flatMap(new ParseRDDofLists())
-                .filter(x->(x._7()>=173.15) && (x._7()<=373.15)
-                        && (x._6()>= desiredIntervalOfHours[0]) && (x._6()<= desiredIntervalOfHours[1])
-                        && desiredYearList.contains(x._3())
-                        && desiredMonths.contains(x._4()));
+                .filter(x->(desiredYearList.contains(x._3()) && (desiredMonths.contains(x._4()))))
+                .filter(x->((x._6()>= desiredIntervalOfHours[0]) && (x._6()<= desiredIntervalOfHours[1])))
+                .filter(x->(x._7()>=173.15) && (x._7()<=373.15));
 
-
+        //get difference between summer and winter months,
+        //sorting by difference and grouping by nation and year
         JavaPairRDD<Tuple2<Integer, String>, Iterable<Tuple2<String,Double>>> topDiff = citiesParsed
                 .mapToPair(new mapToAverage())
                 .reduceByKey((x, y) -> new Tuple4<>(x._1() + y._1(), x._2() + y._2(), x._3() + y._3(), x._4() + y._4()))
@@ -92,7 +105,8 @@ public class Query3 {
                 .mapToPair(x -> new Tuple2<>(new Tuple2<>(x._2._3(), x._2._2()), new Tuple2<>(x._2._1(), x._1)))
                 .groupByKey();
 
-
+        //get the rankings for the two years for each nation
+        //and get positions in the previous year
         for(String nation: distinctNations) {
             List<Tuple2<Tuple2<Integer, String>, Iterable<Tuple2<String, Double>>>> topDesiredYear = topDiff
                     .filter(x -> x._1()._2().equals(nation) && x._1()._1().equals(desiredYearList.get(0)))
@@ -107,6 +121,7 @@ public class Query3 {
 
             ArrayList<Integer> positions = new ArrayList<>();
             System.out.println("\nNation: "+ nation + "   Ranking Year "+ desiredYearList.get(0));
+
             //Print in tabular format
             System.out.println("---------------------------------------------------------");
             System.out.printf("%4s %15s %10s %10s %s ", "RANK", "CITY", "VALUE", "YEAR", desiredYearList.get(1));
@@ -128,10 +143,12 @@ public class Query3 {
         }
 
         sc.stop();
-        System.out.printf("Total time to obtain TimeZones Query3: %s ms\n", Long.toString(fTimeZone));
-        System.out.printf("Total time to obtain Nations Query3: %s ms\n", Long.toString(fNations));
         long finalTime = System.currentTimeMillis();
-        System.out.printf("Total time to complete Query3: %s ms\n", Long.toString(finalTime-initialTime));
+        System.out.printf("Total time to obtain TimeZones: %s ms\n", Long.toString(fTimeZone - iTimeZone));
+        System.out.printf("Total time to obtain Nations: %s ms\n", Long.toString(fNations - iNations));
+        System.out.printf("Total time to parse %s: %s ms\n",pathFileTemperature, Long.toString(fParseFile- iParseFile));
+        System.out.printf("Total time after setting spark Spark Context: %s ms\n", Long.toString(finalTime - iOperations));
+        System.out.printf("Total time to complete: %s ms\n", Long.toString(finalTime-initialTime));
     }
 
 

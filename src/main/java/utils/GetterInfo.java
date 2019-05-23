@@ -10,8 +10,10 @@ import static io.restassured.RestAssured.*;
 
 public class GetterInfo {
     private ArrayList<CityCoordinate> cityCoordinatesArrayList;
+    //local mode
     private static final String fileTimeZone = "data/timeZone.csv";
-    private static final String fileNationCities = "data/worldCities.csv";
+    //cluster mode
+//    private static final String fileTimeZone = "/opt/spark-data/timeZone.csv";
 
     //file with the city coordinates is read only one time
     public GetterInfo(JavaSparkContext sc, String fileCityAttributes) {
@@ -83,46 +85,9 @@ public class GetterInfo {
     }
 
 
-    //first try to find nation in the file word_cities.csv
-    //if the city is not present in the file it obtains the nation by making a request to the site www.geonames.org
-/*    private String getNation(String cityName, JavaSparkContext sc) {
-        String nation = "";
-        JavaRDD<String> file = sc.textFile(fileNationCities);
-        String header = file.first();
-        //get ther other lines of csv file
-        List<String> otherLines = file
-                .filter(row -> !row.equals(header))
-                .collect();
-        for(String line: otherLines) {
-            String[] values = line.split(",", -1);
-            if(values[0].contains(cityName)){
-                nation= nation + values[1];
-                return nation;
-            }
-        }
-
-        if(nation.length()==0){
-            CityCoordinate cityCoordinate = new CityCoordinate();
-
-            for (CityCoordinate coordinate : cityCoordinatesArrayList) {
-                if (coordinate.getCity().equals(cityName)) {
-                    cityCoordinate.setCity(cityName);
-                    cityCoordinate.setLat(coordinate.getLat());
-                    cityCoordinate.setLong(coordinate.getLong());
-                }
-            }
-            try {
-                nation = get("http://www.geonames.org/findNearbyPlaceName?lat={lat}&lng={long}",
-                        cityCoordinate.getLat(), cityCoordinate.getLong())
-                        .xmlPath().getString("geonames.geoname.countryName");
-            }catch ( Exception e){
-                System.err.println("\nControl your Internet Connection");
-                System.exit(1);
-            }
-        }
-        return nation;
-    }*/
-
+    //first try to find nation in redis
+    //if the city is not present in the db,
+    // it obtains the nation by making a request to the site www.geonames.org
     private String getNation(String cityName, String redisIP, boolean useRedis) {
         String nation=null;
         if(useRedis) {
