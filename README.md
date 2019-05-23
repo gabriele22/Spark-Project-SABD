@@ -9,7 +9,7 @@ You need to have installed:
 * docker-compose
 
 ## Build and Run all required containers
-First download and unzip the file: <https://github.com/gabriele22/Spark-Project-SABD/blob/master/data/sabd-spark-project.zip>.
+First download and unzip the file: https://drive.google.com/file/d/1K19JKYNCa3cac_eyXBDJmuwDZ31gAzFk/view?usp=sharing.
 In the directory created, open a terminal and execute this command:
 ```bash
 sh start.sh
