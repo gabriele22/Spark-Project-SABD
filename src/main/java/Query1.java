@@ -112,12 +112,14 @@ public class Query1 {
             System.out.println(">\n");
 
         }
+        long fOperations = System.currentTimeMillis();
 
-        sc.stop();
-        long finalTime = System.currentTimeMillis();
+
         System.out.printf("Total time to obtain TimeZones: %s ms\n", Long.toString(fTimeZone-iTimeZone));
         System.out.printf("Total time to parse %s: %s ms\n",pathFileWeatherDescription, Long.toString(fParseFile- iParseFile));
-        System.out.printf("Total time after setting spark Spark Context: %s ms\n", Long.toString(finalTime - iOperations));
+        System.out.printf("Total time to execute operations: %s ms\n", Long.toString(fOperations - iOperations));
+        sc.stop();
+        long finalTime = System.currentTimeMillis();
         System.out.printf("Total time to complete: %s ms\n", Long.toString(finalTime-initialTime));
     }
 
@@ -137,7 +139,7 @@ public class Query1 {
 
 
     private static class ControlHour implements PairFunction<Tuple5<String, Integer, Integer, Integer, String>,
-                                                      Tuple4<String, Integer, Integer, Integer>, Integer> {
+            Tuple4<String, Integer, Integer, Integer>, Integer> {
         @Override
         public Tuple2<Tuple4<String, Integer,Integer,Integer>, Integer> call(Tuple5<String, Integer, Integer, Integer, String> stringIntegerIntegerIntegerStringTuple5) {
             Tuple2<Tuple4<String, Integer,Integer,Integer>, Integer> result = null;

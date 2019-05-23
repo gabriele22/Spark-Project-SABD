@@ -95,7 +95,8 @@ public class Query3 {
                 .filter(x->(x._7()>=173.15) && (x._7()<=373.15));
 
         //get difference between summer and winter months,
-        //sorting by difference and grouping by nation and year
+        //sorting by difference
+        // and grouping by nation and year
         JavaPairRDD<Tuple2<Integer, String>, Iterable<Tuple2<String,Double>>> topDiff = citiesParsed
                 .mapToPair(new mapToAverage())
                 .reduceByKey((x, y) -> new Tuple4<>(x._1() + y._1(), x._2() + y._2(), x._3() + y._3(), x._4() + y._4()))
@@ -103,7 +104,8 @@ public class Query3 {
                         new Tuple3<>(x._1._1(), x._1._2(), x._1._3())))
                 .sortByKey(false)
                 .mapToPair(x -> new Tuple2<>(new Tuple2<>(x._2._3(), x._2._2()), new Tuple2<>(x._2._1(), x._1)))
-                .groupByKey();
+                .groupByKey()
+                .cache();
 
         //get the rankings for the two years for each nation
         //and get positions in the previous year
@@ -141,13 +143,15 @@ public class Query3 {
 
 
         }
+        long fOperations = System.currentTimeMillis();
 
-        sc.stop();
-        long finalTime = System.currentTimeMillis();
+
         System.out.printf("Total time to obtain TimeZones: %s ms\n", Long.toString(fTimeZone - iTimeZone));
         System.out.printf("Total time to obtain Nations: %s ms\n", Long.toString(fNations - iNations));
         System.out.printf("Total time to parse %s: %s ms\n",pathFileTemperature, Long.toString(fParseFile- iParseFile));
-        System.out.printf("Total time after setting spark Spark Context: %s ms\n", Long.toString(finalTime - iOperations));
+        System.out.printf("Total time to execute operations: %s ms\n", Long.toString(fOperations - iOperations));
+        sc.stop();
+        long finalTime = System.currentTimeMillis();
         System.out.printf("Total time to complete: %s ms\n", Long.toString(finalTime-initialTime));
     }
 
@@ -159,7 +163,7 @@ public class Query3 {
             for (City city : cities) {
                 Tuple7<String, String, Integer, Integer, Integer,Integer, Double> result =
                         new Tuple7<>(city.getCity(), city.getNation(),
-                            city.getYear(), city.getMonth(), city.getDay(),city.getHour(), city.getTemperature());
+                                city.getYear(), city.getMonth(), city.getDay(),city.getHour(), city.getTemperature());
                 results.add(result);
 
             }
