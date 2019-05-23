@@ -1,0 +1,33 @@
+# Spark-Project-SABD
+
+The goal of this project is to answer the queries in the document: <https://github.com/gabriele22/Spark-Project-SABD/blob/master/data/SABD1819_progetto1.pdf>.
+Furthermore it is possible to create a standalone cluster with docker and docker-compose to test everything.
+
+## Pre requisites
+You need to have installed:
+* docker
+* docker-compose
+
+## Build and Run all required containers
+First download and unzip the file: <https://github.com/gabriele22/Spark-Project-SABD/blob/master/data/sabd-spark-project.zip>.
+In the directory created, open a terminal and execute this command:
+```bash
+sh start.sh
+```
+## Usage
+Execute this command for the first query: 
+```bash
+sh submitQuery1.sh
+```
+Execute this command for third query:
+```bash
+sh submitQuery3.sh
+```
+
+To access the spark UI copy this link on your browser: 
+<http://10.5.0.2:8080/> 
+
+## Stop all container and remove temp file
+```bash
+sh stopAndClean.sh
+```
