@@ -1,6 +1,6 @@
 # Spark-Project-SABD
 
-The goal of this project is to answer the queries in the document: <https://drive.google.com/file/d/1mVxpYWk_OQdDZBCSqUck_pTQ8WwbEC21/view?usp=sharing>.
+The goal of this project is to answer the queries in the document: <https://drive.google.com/file/d/1G-NgZfzYSBf5JK_PHbD1tJs16IElXUDL/view?usp=sharing>.
 Furthermore it is possible to create a standalone cluster with docker and docker-compose to test everything.
 
 ## Pre requisites
